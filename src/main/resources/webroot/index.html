@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket-CZML-webroot</title>
+  <script type="text/javascript" src="js/sockjs.min.js"></script>
+  <script type="text/javascript" src="js/stomp.min.js"></script>
+  <script type="text/javascript" src="js/Cesium.js"></script>
+  <link href="js/Widgets/widgets.css" rel="stylesheet">
+
+</head>
+<body>
+
+<div id="cesiumContainer"></div>
+
+<script>
+  function testStomp() {
+    // const wsHttp = "http://localhost:8080";
+    // const ws =  new SockJS(wsHttp);
+    // not support
+    // const client = Stomp.over(ws);
+
+    const wsUrl = "ws://localhost:8080/stomp";
+    const client = Stomp.client(wsUrl);
+    const callback = function (frame) {
+      console.log(frame);
+      appendMessage(frame.body)
+
+    }
+    const queueCallback = function (frame) {
+      console.log(frame)
+
+    }
+    const wsHeader = {
+      projectName: encodeURI("测试场景"),
+      clientId: "f3c11441-ba16-4204-8197-927206551ae9",
+      thinkId: "402bb824334511ed9381020017000b7b"
+    };
+    client.connect(wsHeader, function () {
+      client.subscribe("/topic/stocks", callback)
+      client.subscribe("/queue/czml", queueCallback)
+    })
+    var quote = {symbol: 'APPL', value: 195.46};
+    setInterval(function () {
+
+      client.send("/topic/stocks", {}, JSON.stringify(quote));
+    }, 1000)
+  }
+
+  testStomp();
+
+  function appendMessage(message) {
+    let p = document.createElement("p");
+    p.textContent = message;
+    document.getElementById("message_container").appendChild(p);
+  }
+
+  function createCesiumViewer() {
+    const viewer = new Cesium.Viewer("cesiumContainer", {});
+    viewer.scene.debugShowFramesPerSecond = true
+    const czmlStreamDS = new Cesium.CzmlDataSource('czml_stream_ds');
+    viewer.dataSources.add(czmlStreamDS);
+  }
+
+  function processCzmlPack(pack) {
+    czmlStreamDS.process(pack);
+  }
+</script>
+</body>
+</html>
