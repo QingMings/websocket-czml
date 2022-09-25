@@ -18,7 +18,7 @@
 
     <vertx.version>4.3.3</vertx.version>
     <junit-jupiter.version>5.7.0</junit-jupiter.version>
-
+    <netty.version>4.1.78.Final</netty.version>
     <main.verticle>com.yhl.websocket_czml.MainVerticle</main.verticle>
     <launcher.class>io.vertx.core.Launcher</launcher.class>
   </properties>
@@ -47,6 +47,10 @@
     <dependency>
       <groupId>io.vertx</groupId>
       <artifactId>vertx-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-auth-common</artifactId>
     </dependency>
     <dependency>
       <groupId>io.vertx</groupId>
@@ -94,6 +98,57 @@
       <version>${junit-jupiter.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+      <version>2.11.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.13.4</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>libtleprop-platform</artifactId>
+      <version>1.0-1.5.7</version>
+<!--      <scope>system</scope>-->
+<!--      <systemPath>${project.basedir}/lib/libtleprop-platform-1.0-1.5.7.jar</systemPath>-->
+    </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>javacpp</artifactId>
+      <version>1.5.7</version>
+<!--      <scope>system</scope>-->
+<!--      <systemPath>${project.basedir}/lib/javacpp-1.5.7.jar</systemPath>-->
+    </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>libtleprop</artifactId>
+      <version>1.0-1.5.7</version>
+<!--      <scope>system</scope>-->
+<!--      <systemPath>${project.basedir}/lib/libtleprop-1.0-1.5.7.jar</systemPath>-->
+    </dependency>
+    <dependency>
+      <groupId>org.bytedeco</groupId>
+      <artifactId>libtleprop</artifactId>
+      <version>1.0-1.5.7</version>
+<!--      <scope>system</scope>-->
+      <classifier>windows-x86_64</classifier>
+<!--      <systemPath>${project.basedir}/lib/libtleprop-1.0-1.5.7-windows-x86_64.jar</systemPath>-->
+    </dependency>
+    <dependency>
+      <groupId>cn.hutool</groupId>
+      <artifactId>hutool-all</artifactId>
+      <version>5.8.5</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-resolver-dns-native-macos</artifactId>
+      <version>4.1.78.Final</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -115,6 +170,7 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+
               <transformers>
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">

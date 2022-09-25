@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>WebSocket-CZML-webroot</title>
-  <script type="text/javascript" src="js/sockjs.min.js"></script>
-  <script type="text/javascript" src="js/stomp.min.js"></script>
+  <!--  <script type="text/javascript" src="js/sockjs.min.js"></script>-->
+  <script type="text/javascript" src="js/stomp.umd.min.js"></script>
+  <script type="text/javascript" src="js/moment.min.js"></script>
   <script type="text/javascript" src="js/Cesium.js"></script>
   <link href="js/Widgets/widgets.css" rel="stylesheet">
 
@@ -12,58 +13,267 @@
 <body>
 
 <div id="cesiumContainer"></div>
+<div id="buttons">
+  <button id="start" disabled="disabled" onclick="start()" class="mybtn cesium-button">开始推位置数据</button>
+  <button id="stop" disabled="disabled" onclick="stop()" class="mybtn cesium-button">停止推位置数据</button>
+  <button id="plusSpeed" disabled="disabled" onclick="plusSpeed()" class="mybtn cesium-button">加速</button>
+  <button id="minsSpeed" disabled="disabled" onclick="minsSpeed()" class="mybtn cesium-button">减速</button>
+  <button id="maxSpeed" disabled="disabled" onclick="maxSpeed()" class="mybtn cesium-button">极速(60)</button>
+  <input id="maxOrbits" type="number" placeholder="卫星数量限制，最大6000"/>
+  <labe id="myInfo" class="cesium-navigation-help-details"></labe>
+</div>
+<div id="orbits" class="cesium-navigation-help-instructions">
+  <span class="cesium-navigation-help-details">卫星列表</span>
+  <span id="orbitsCount" class="cesium-navigation-help-details"> </span>
+  <ul id="orbitList">
 
-<script>
-  function testStomp() {
-    // const wsHttp = "http://localhost:8080";
-    // const ws =  new SockJS(wsHttp);
-    // not support
-    // const client = Stomp.over(ws);
-
-    const wsUrl = "ws://localhost:8080/stomp";
-    const client = Stomp.client(wsUrl);
-    const callback = function (frame) {
-      console.log(frame);
-      appendMessage(frame.body)
-
-    }
-    const queueCallback = function (frame) {
-      console.log(frame)
-
-    }
-    const wsHeader = {
-      projectName: encodeURI("测试场景"),
-      clientId: "f3c11441-ba16-4204-8197-927206551ae9",
-      thinkId: "402bb824334511ed9381020017000b7b"
-    };
-    client.connect(wsHeader, function () {
-      client.subscribe("/topic/stocks", callback)
-      client.subscribe("/queue/czml", queueCallback)
-    })
-    var quote = {symbol: 'APPL', value: 195.46};
-    setInterval(function () {
-
-      client.send("/topic/stocks", {}, JSON.stringify(quote));
-    }, 1000)
+  </ul>
+</div>
+<style>
+  #buttons {
+    display: block;
+    position: absolute;
+    top: 5px;
+    left: 5px;
   }
 
-  testStomp();
+  #orbits {
+    display: block;
+    position: absolute;
+    top: 45px;
+    left: 5px;
+    /*height:400px;*/
+  }
 
-  function appendMessage(message) {
-    let p = document.createElement("p");
-    p.textContent = message;
-    document.getElementById("message_container").appendChild(p);
+  #orbitList {
+    height: 380px;
+    overflow: scroll;
+    /*overflow-y: hidden;*/
+    overflow-x: hidden;
+  }
+
+  .myli {
+    position: relative;
+    background: #303336;
+    border: 1px solid #444;
+    color: #edffff;
+    fill: #edffff;
+    border-radius: 4px;
+    padding: 5px 12px;
+    margin: 2px 3px;
+    cursor: pointer;
+    overflow: hidden;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  .mybtn {
+    box-sizing: border-box;
+    width: 132px;
+    height: 32px;
+    border-radius: 14%;
+    padding: 0;
+    vertical-align: middle;
+    z-index: 0;
+  }
+</style>
+<script>
+  let speed = 1
+
+  function start() {
+    console.log("start")
+    const maxOrbits = Number(document.getElementById("maxOrbits").value);
+    worker.postMessage({
+      commandType: "START_ORBIT_PREDICTION",
+      body: {dylay: 1000, maxOrbits: maxOrbits, startTime: moment().format('YYYY-MM-DD HH:mm:ss.SSS')}
+    });
+    document.getElementById("maxOrbits").disabled = true;
+  }
+
+  function stop() {
+    worker.postMessage({
+      commandType: "STOP_ORBIT_PREDICTION"
+    });
+    document.getElementById("plusSpeed").innerText = "加速";
+    document.getElementById("minsSpeed").innerText = "减速";
+    document.getElementById("maxOrbits").disabled = false;
+    document.getElementById("myInfo").innerText ="";
+    viewer.entities.removeAll();
+    const e = document.getElementById("orbitList");
+    let child = e.lastElementChild;
+    while (child) {
+      e.removeChild(child);
+      child = e.lastElementChild;
+    }
+    orbitsCount = 0;
+    speed=1;
+  }
+
+  function plusSpeed() {
+    speed += 1;
+    if (speed > 60) {
+      speed = 60;
+    }
+    document.getElementById("plusSpeed").innerText = "加速(" + speed + ")";
+    document.getElementById("minsSpeed").innerText = "减速(" + speed + ")";
+    const maxOrbits = Number(document.getElementById("maxOrbits").value);
+    const body = {
+      dylay: 1000 / speed,
+      maxOrbits: maxOrbits,
+      startTime: moment(Cesium.JulianDate.toDate(viewer.clock.currentTime)).format('YYYY-MM-DD HH:mm:ss.SSS')
+    }
+    worker.postMessage({
+      commandType: "PLUS_SPEED",
+      body: body
+    });
+  }
+
+  function minsSpeed() {
+    speed -= 1;
+    if (speed < 1) {
+      speed = 1;
+    }
+    document.getElementById("plusSpeed").innerText = "加速(" + speed + ")";
+    document.getElementById("minsSpeed").innerText = "减速(" + speed + ")";
+    const maxOrbits = Number(document.getElementById("maxOrbits").value);
+    const body = {
+      dylay: 1000 / speed,
+      maxOrbits: maxOrbits,
+      startTime: moment(Cesium.JulianDate.toDate(viewer.clock.currentTime)).format('YYYY-MM-DD HH:mm:ss.SSS')
+    }
+    worker.postMessage({
+      commandType: "MINS_SPEED",
+      body: body
+    });
+  }
+
+  function maxSpeed() {
+    speed = 60;
+    document.getElementById("plusSpeed").innerText = "加速(" + speed + ")";
+    document.getElementById("minsSpeed").innerText = "减速(" + speed + ")";
+    const maxOrbits = Number(document.getElementById("maxOrbits").value);
+    const body = {
+      dylay: 1000 / speed,
+      maxOrbits: maxOrbits,
+      startTime: moment(Cesium.JulianDate.toDate(viewer.clock.currentTime)).format('YYYY-MM-DD HH:mm:ss.SSS')
+    }
+    worker.postMessage({
+      commandType: "MINS_SPEED",
+      body: body
+    });
   }
 
   function createCesiumViewer() {
     const viewer = new Cesium.Viewer("cesiumContainer", {});
+    window.viewer = viewer;
     viewer.scene.debugShowFramesPerSecond = true
-    const czmlStreamDS = new Cesium.CzmlDataSource('czml_stream_ds');
-    viewer.dataSources.add(czmlStreamDS);
+    // const czmlStreamDS = new Cesium.CzmlDataSource('czml_stream_ds');
+    // viewer.dataSources.add(czmlStreamDS);
+    // viewer.scene.postRender.addEventListener(function () {
+    //   postRenderListener();
+    // })
   }
 
-  function processCzmlPack(pack) {
-    czmlStreamDS.process(pack);
+  function postRenderListener() {
+    createOrUpdateEntity(dataContainer)
+  }
+
+  createCesiumViewer();
+
+  let dataContainer;
+  const worker = new Worker("/js/webWorker.js");
+  worker.onmessage = function (event) {
+    if (event.data === undefined) return;
+    switch (event.data.replyType) {
+      case "Orbits_Position":
+        createOrUpdateEntity(event.data);
+        // dataContainer = event.data;
+        break
+      case "Connected":
+        document.getElementById("start").disabled = false;
+        document.getElementById("stop").disabled = false;
+        document.getElementById("plusSpeed").disabled = false;
+        document.getElementById("minsSpeed").disabled = false;
+        document.getElementById("maxSpeed").disabled = false;
+        break;
+    }
+  }
+  let orbitsCount = 0;
+
+  function createOrUpdateEntity(data) {
+    if (!Cesium.defined(data)) return;
+    if (orbitsCount === 0) {
+      orbitsCount = data.body.length;
+      document.getElementById("orbitsCount").innerText = orbitsCount;
+    }
+    const ms = data.ms;
+    document.getElementById("myInfo").innerText = "准备数据耗时：" + ms + "ms,最大可加速：" + (Math.floor((1000 / ms) * 100) / 100) + " 倍";
+
+    const time = Cesium.JulianDate.fromDate(moment(data.time).toDate())
+
+    data.body.map(item => {
+      if (!Cesium.defined(viewer.entities.getById(item.id))) {
+        let ele = document.createElement('li');
+        ele.id = item.id;
+        ele.innerHTML = item.name;
+        ele.classList.add("cesium-navigation-help-details")
+        ele.classList.add("myli")
+        document.getElementById("orbitList").append(ele);
+        ele.onclick = function (e) {
+          window.viewer.trackedEntity = window.viewer.entities.getById(e.target.id);
+        }
+      }
+      const entity = viewer.entities.getOrCreateEntity(item.id);
+      Cesium.defined(entity.name) || (entity.name = item.name);
+      Cesium.defined(entity.show) || (entity.show = true)
+      // Cesium.defined(entity.label) || (entity.label={
+      //   id: item.id,
+      //   text: item.name,
+      //   font:"24px Helvetica" ,    //先字号再字体
+      //   fillColor: new Cesium.Color(0.6, 0.9, 1.0)  ,   //填充颜色
+      //   outlineColor:Cesium.Color.BLACK,     //边框颜色
+      //   outlineWidth:2,
+      //   style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      //   horizontalOrigin:Cesium.HorizontalOrigin.CENTER ,      //确定文字在坐标点的位置, CENTER  RIGHT  LEFT
+      //   showBackground:true　　　　//是否显示背景色,就是文字后面的阴影
+      // })
+      Cesium.defined(entity.billboard) || (entity.billboard = {
+        image: './img/debris.png',
+        show: true,
+
+      })
+      // Cesium.defined(entity.model) || (entity.model = {
+      //   uri: './gltf/GSSAP.gltf',
+      //   // minimumPixelSize : 1280,
+      //   // scale : 10,
+      //   // maximumScale: 128,
+      //   show: true
+      // });
+      Cesium.defined(entity.path) || (entity.path = {
+        resolution: 1,
+        material: new Cesium.PolylineGlowMaterialProperty({
+          glowPower: 0.1,
+          color: Cesium.Color.PINK
+        }),
+        width: 5
+      });
+      if (!Cesium.defined(entity.position)) {
+        entity.position = new Cesium.SampledPositionProperty(Cesium.ReferenceFrame.FIXED)
+        entity.position.setInterpolationOptions({
+          interpolationDegree: 5,
+          interpolationAlgorithm: Cesium.LagrangePolynomialApproximation
+        })
+        // const ecf = item.ecf;
+        // entity.position = new Cesium.ConstantPositionProperty(new Cesium.Cartesian3(ecf[0], ecf[1], ecf[2]),Cesium.ReferenceFrame.FIXED)
+      }
+      const ecf = item.ecf;
+      entity.position.addSample(time, new Cesium.Cartesian3(ecf[0], ecf[1], ecf[2]));
+      // entity.position.setValue(new Cesium.Cartesian3(ecf[0], ecf[1], ecf[2]));
+
+    })
+    viewer.clock.currentTime = time;
   }
 </script>
 </body>

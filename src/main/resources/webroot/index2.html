@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WebSocket-CZML-webroot</title>
+<!--  <script type="text/javascript" src="js/sockjs.min.js"></script>-->
+  <script type="text/javascript" src="js/stomp.umd.min.js"></script>
+  <script type="text/javascript" src="js/Cesium.js"></script>
+  <link href="js/Widgets/widgets.css" rel="stylesheet">
+
+</head>
+<body>
+
+<div id="cesiumContainer"></div>
+
+<script>
+
+  function testnew(){
+
+    let stompClient;
+
+    const stompConfig = {
+      // Typically login, passcode and vhost
+      // Adjust these for your broker
+      // connectHeaders: {
+      //   login: "guest",
+      //   passcode: "guest"
+      // },
+
+      // Broker URL, should start with ws:// or wss:// - adjust for your broker setup
+      brokerURL: "ws://localhost:8081/stomp",
+
+      // Keep it off for production, it can be quit verbose
+      // Skip this key to disable
+      debug: function (str) {
+        // console.log('STOMP: ' + str);
+      },
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+
+      // Subscriptions should be done inside onConnect as those need to reinstated when the broker reconnects
+      // onConnect: function (frame) {
+      //   // The return object has a method called `unsubscribe`
+      //   const subscription = stompClient.subscribe('/topic/stocks', function (message) {
+      //     const payload = JSON.parse(message.body);
+      //     console.log(payload)
+      //     // displayIncomingMessage(payload.user, payload.message);
+      //   });
+      // },
+      // onDisconnect: function (a){
+      //   console.log(a)
+      // }
+    };
+
+    // Create an instance
+    stompClient = new StompJs.Client(stompConfig);
+    stompClient.onConnect = function (frame) {
+      // Do something
+      console.log("连接成功")
+    };
+    const quote = { symbol: 'AAPL', value: 195.46 };
+    // stompClient.publish({
+    //   destination: '/topic/stocks',
+    //   body: JSON.stringify(quote),
+    // });
+
+    // stompClient.subscribe('/topic/stocks', function (message) {
+    //   const quote = JSON.parse(message.body);
+    //   alert(quote.symbol + ' is at ' + quote.value);
+    // });
+    // You can set additional configuration here
+
+    // Attempt to connect
+    stompClient.activate();
+  }
+
+  testnew();
+  function testStomp() {
+    // const wsHttp = "http://localhost:8080";
+    // const ws =  new SockJS(wsHttp);
+    // not support
+    // const client = Stomp.over(ws);
+    const client = new StompJs.Client();
+    client.brokerURL = "ws://localhost:8081/stomp";
+    // const wsUrl = "ws://localhost:8081/stomp";
+    // const client = Stomp.client(wsUrl);
+    const callback = function (frame) {
+      console.log(frame);
+      appendMessage(frame.body)
+
+    }
+    const queueCallback = function (frame) {
+      console.log(frame)
+
+    }
+    const wsHeader = {
+      projectName: encodeURI("测试场景"),
+      clientId: "f3c11441-ba16-4204-8197-927206551ae9",
+      thinkId: "402bb824334511ed9381020017000b7b"
+    };
+    client.heartbeatIncoming=1000;
+    client.heartbeatOutgoing=1000;
+    client.reconnect_delay = 5000;
+    client.onConnect=function (frame) {
+      console.log("connected success!")
+      console.log("connected success!")
+      console.log("connected success!")
+      console.log("connected success!")
+      client.subscribe("/topic/stocks", callback)
+      client.subscribe("/queue/czml", queueCallback)
+    };
+    client.onStompError = function (frame) {
+      // Will be invoked in case of error encountered at Broker
+      // Bad login/passcode typically will cause an error
+      // Complaint brokers will set `message` header with a brief message. Body may contain details.
+      // Compliant brokers will terminate the connection after any error
+      console.log('Broker reported error: ' + frame.headers['message']);
+      console.log('Additional details: ' + frame.body);
+    };
+    client.debug = function (str) {
+      console.log(str);
+    }
+    client.activate();
+    var quote = {symbol: 'APPL', value: 195.46};
+    // setInterval(function () {
+    //   client.publish({ destination: '/topic/stocks', body: 'Hello world' });
+    //
+    // }, 1000)
+  }
+
+  // testStomp();
+
+  function appendMessage(message) {
+    let p = document.createElement("p");
+    p.textContent = message;
+    document.getElementById("message_container").appendChild(p);
+  }
+
+  function createCesiumViewer() {
+    const viewer = new Cesium.Viewer("cesiumContainer", {});
+    viewer.scene.debugShowFramesPerSecond = true
+    const czmlStreamDS = new Cesium.CzmlDataSource('czml_stream_ds');
+    viewer.dataSources.add(czmlStreamDS);
+  }
+
+  function processCzmlPack(pack) {
+    czmlStreamDS.process(pack);
+  }
+</script>
+</body>
+</html>
