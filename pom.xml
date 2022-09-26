@@ -6,7 +6,7 @@
 
   <groupId>com.yhl</groupId>
   <artifactId>websocket-czml</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0</version>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -152,13 +152,88 @@
   </dependencies>
 
   <build>
+<!--    <finalName>websocket-czml-windows-x86_64</finalName>-->
     <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>2.5.2</version>
+        <executions>
+          <execution>
+            <id>libtleprop-platform-1.0-1.5.7.jar</id>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/libtleprop-platform-1.0-1.5.7.jar</file>
+              <repositoryLayout>default</repositoryLayout>
+              <groupId>org.bytedeco</groupId>
+              <artifactId>libtleprop-platform</artifactId>
+              <version>1.0-1.5.7</version>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>javacpp-1.5.7.jar</id>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/javacpp-1.5.7.jar</file>
+              <repositoryLayout>default</repositoryLayout>
+              <groupId>org.bytedeco</groupId>
+              <artifactId>javacpp</artifactId>
+              <version>1.5.7</version>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>libtleprop-1.0-1.5.7.jar</id>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/libtleprop-1.0-1.5.7.jar</file>
+              <repositoryLayout>default</repositoryLayout>
+              <groupId>org.bytedeco</groupId>
+              <artifactId>libtleprop</artifactId>
+              <version>1.0-1.5.7</version>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>libtleprop-1.0-1.5.7-windows-x86_64.jar</id>
+            <phase>clean</phase>
+            <configuration>
+              <file>${basedir}/lib/libtleprop-1.0-1.5.7-windows-x86_64.jar</file>
+              <repositoryLayout>default</repositoryLayout>
+              <groupId>org.bytedeco</groupId>
+              <artifactId>libtleprop</artifactId>
+              <version>1.0-1.5.7</version>
+              <classifier>windows-x86_64</classifier>
+              <packaging>jar</packaging>
+              <generatePom>true</generatePom>
+            </configuration>
+            <goals>
+              <goal>install-file</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>${maven-compiler-plugin.version}</version>
         <configuration>
           <release>11</release>
         </configuration>
+
       </plugin>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -181,7 +256,7 @@
                 </transformer>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
               </transformers>
-              <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar
+              <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-windows-x86_64.jar
               </outputFile>
             </configuration>
           </execution>
@@ -203,6 +278,7 @@
           </arguments>
         </configuration>
       </plugin>
+
     </plugins>
   </build>
 

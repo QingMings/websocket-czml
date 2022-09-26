@@ -76,7 +76,7 @@ public class MainVerticle extends AbstractVerticle {
     Route orbitListRoute = router.get("/orbit/list");
     orbitListRoute.handler(new OrbitListHandler());
     router.route("/*").handler(StaticHandler.create());
-    server.requestHandler(router).webSocketHandler(stompServer.webSocketHandler()).listen(8081,"127.0.0.1");
+    server.requestHandler(router).webSocketHandler(stompServer.webSocketHandler()).listen(8081);
 
     AtomicInteger atomicInteger = new AtomicInteger(0);
 //    vertx.setPeriodic(5000,l->{

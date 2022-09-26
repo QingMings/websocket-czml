@@ -1,11 +1,12 @@
 importScripts("/js/stomp.umd.min.js");
 
+const host = self.location.host;
 // stompConfig
 const stompConfig = {
   connectHeaders: {
     login: "guest", passcode: "guest"
   },
-  brokerURL: "ws://localhost:8081/stomp",
+  brokerURL: "ws://"+host+"/stomp",
   reconnectDelay: 5000,
   heartbeatIncoming: 4000,
   heartbeatOutgoing: 4000,
